@@ -1,0 +1,70 @@
+---
+- name: Playbook to Deploy TFTP server 
+  hosts: all
+  vars:
+    packages:
+     - tftp
+     - tftp-server
+     - xinetd
+    tftp_dir: /var/lib/tftpboot/
+    tftp_config: /etc/xinetd.d/tftp
+    services:
+      - tftp
+      - xinetd
+  tasks: 
+    - name: install packages "{{ packages }}"
+      package:
+        name: "{{ packages }}"
+        state: latest
+
+    - name: create "{{ tftp_dir }}" dir
+      file:
+        owner: nobody
+        group: nobody
+        mode: 0777
+        path: "{{ tftp_dir }}"
+        recurse: yes
+        state: directory
+        seuser: unconfined_u
+        serole: object_r
+        setype: tftpdir_rw_t
+        selevel: s0
+
+    - name: copy config to "{{ tftp_config }}" 
+      copy:
+        src: tftp_config
+        dest: "{{ tftp_config }}"
+
+    - name: start and enable services "{{ services }}"
+      service:
+        name: "{{ item }}"
+        state: restarted
+        enabled: true
+      with_items: "{{ services }}"
+
+    - name: set sebool tftp_anon_write
+      seboolean:
+        name: tftp_anon_write
+        state: yes
+        persistent: yes
+
+    - name: set sebol tftp_home_dir 
+      seboolean: 
+        name: tftp_home_dir
+        state: yes
+        persistent: yes
+
+    - name: open port 69/udp in firewall
+      firewalld:
+        port: 69/udp
+        permanent: true
+        state: enabled
+        immediate: true
+
+    - name: start tftp service in firewall
+      firewalld:
+        service: tftp
+        permanent: true
+        state: enabled
+        zone: public
+        immediate: true
