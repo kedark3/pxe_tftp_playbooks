@@ -1,0 +1,73 @@
+---
+- name: Playbook to Deploy PXE server
+  hosts: all
+  vars:
+    packages:
+      - syslinux
+    syslinux_files:
+      - pxelinux.0
+      - menu.c32
+      - mboot.c32
+      - linux.c32
+      - chain.c32
+    syslinux_dir: /usr/share/syslinux
+    tftpboot_dir: /var/lib/tftpboot
+    iso_path: /home/kkulkarn/VMware/VMware-VMvisor-Installer-6.5.0.update01-5969303.x86_64.iso 
+    os_dir: esxi65
+  force_handlers: True
+  tasks:
+    - block:
+        - name: install packages "{{ packages }}"
+          package:
+            name: "{{ packages }}"
+            state: latest
+
+        - name: Copy files from syslinux
+          copy:
+            src: "{{ syslinux_dir}}/{{item}}"
+            dest: "{{ tftpboot_dir }}"
+            remote_src: yes
+          with_items: "{{ syslinux_files }}"
+
+        - name: Copy ISO image to server
+          copy: 
+            src: "{{ iso_path }}"
+            dest: /root
+
+        - name: Mount ISO at /mnt 
+          command: mount -t iso9660 -o loop /root/VMware-VMvisor-Installer-6.5.0.update01-5969303.x86_64.iso
+    #      mount:
+    #        path: /mnt
+    #        src: /root/VMware-VMvisor-Installer-6.5.0.update01-5969303.x86_64.iso
+    #        fstype: iso9660
+    #        opts: ro
+    #        state: present
+
+        - name: Make directory to hold files from iso in "{{ tftpboot_dir }}"
+          file:
+            state: directory
+            path: "{{ tftpboot_dir }}/{{ os_dir }}"
+            mode: 0755
+
+        - name: Copy files from /mnt to "{{ tftpboot_dir }}/{{ os_dir }}"
+          shell: cp -R /mnt/* "{{ tftpboot_dir}}/{{os_dir}}/"
+
+        - name: Create dir pxelinux.cfg
+          file:
+            path: "{{ tftpboot_dir }}/pxelinux.cfg"
+            state: directory
+            mode: 0755
+
+        - name: Copy pxelinux.cfg/default 
+          copy:
+            src: pxelinux.cfg.default
+            dest: "{{ tftpboot_dir}}/pxelinux.cfg/default"
+
+        - name: sed -i "s#/#/{{os_dir }}/#g" "{{ tftpboot_dir }}/{{ os_dir }}/boot.cfg"
+          shell: sed -i "s#/#/{{os_dir }}/#g" "{{ tftpboot_dir }}/{{ os_dir }}/boot.cfg"
+
+        - name: Restore selinux context on "{{ tftpboot_dir }}/{{ os_dir }}"
+          shell: restorecon -R "{{ tftpboot_dir }}/{{ os_dir }}"
+      always:
+        - name: Unmount ISO
+          command: umount /mnt

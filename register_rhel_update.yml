@@ -1,0 +1,23 @@
+---
+- name: Register RHEL and update
+  hosts: all
+  tasks:
+    - name: activate subscription on RHEL
+      redhat_subscription:
+        state:  present
+        username: "{{ RH_SUBSCRIPTION_USERNAME }}"
+        password: "{{ RH_SUBSCRIPTION_PASSWORD }}"
+        autosubscribe: true
+      tags:
+        - register
+
+    - name: yum update
+      yum:
+        name: '*'
+        state: latest
+
+    - name: restart server
+      command: /sbin/shutdown -r +1
+      async: 0
+      poll: 0
+      ignore_errors: true

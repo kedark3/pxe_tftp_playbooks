@@ -6,6 +6,8 @@
      - tftp
      - tftp-server
      - xinetd
+     - httpd
+     - dhcp
     tftp_dir: /var/lib/tftpboot/
     tftp_config: /etc/xinetd.d/tftp
     services:

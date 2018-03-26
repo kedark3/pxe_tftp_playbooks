@@ -1,0 +1,28 @@
+---
+- name: Playbook to Deploy DHCP server
+  hosts: all
+  vars:
+    packages:
+      - dhcp
+    services:
+      - dhcpd
+    dhcp_conf_location: /etc/dhcp/dhcpd.conf
+
+  tasks:
+    - name: install packages "{{ packages }}"
+      package:
+        name: "{{ packages }}"
+        state: latest
+
+    - name: copy conf file to "{{ dhcp_conf_location }}"
+      copy:
+        src: dhcpd.conf
+        dest: "{{ dhcp_conf_location }}"
+
+    - name: start "{{ services }}"
+      service:
+        name: "{{ item }}"
+        state: restarted
+        enabled: true
+      with_items: "{{ services }}"
+

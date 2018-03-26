@@ -1,0 +1,5 @@
+---
+#- import_playbook: register_rhel_update.yml 
+- import_playbook: dhcp_deploy.yml
+- import_playbook: tftp_deploy.yml
+- import_playbook: pxe_deploy.yml

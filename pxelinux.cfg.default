@@ -1,0 +1,11 @@
+SERIAL 0 115200n8
+DEFAULT esxi6.serial
+PROMPT 0
+MENU TITLE PXE Boot
+LABEL esxi6.serial
+     MENU LABEL ^4) ESXi60_Serial
+     KERNEL esxi65/mboot.c32
+     APPEND -c esxi65/boot.cfg text com1_Port=0x3f8 gdbPort=none logPort=none tty2Port=com1 ks=http://abc.com/~kkulkarn/ks.cfg; ignoreHeadless="True"
+LABEL hddboot
+LOCALBOOT 0x80
+MENU LABEL ^Boot from local disk
